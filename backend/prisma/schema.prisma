@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  tinderId  String   @unique
+  s_Id      String?  @unique
+  name      String
+  age       Int
+  bio       String
+  photoUrls String[] // S3 URLs
+
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id])
+
+  Embedding Embedding[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  searchLogId String?
+  searchLog   SearchLog? @relation(fields: [searchLogId], references: [id])
+}
+
+model Location {
+  id        String @id @default(uuid())
+  name      String
+  latitude  Float
+  longitude Float
+  radiusKm  Int    @default(200)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  profiles  Profile[]
+}
+
+model Embedding {
+  id        String   @id @default(uuid())
+  tinderId  String
+  vectorId  String
+  profile   Profile  @relation(fields: [tinderId], references: [tinderId])
+  createdAt DateTime @default(now())
+}
+
+model SearchLog {
+  id              String    @id @default(uuid())
+  searchedName    String
+  searchedImage   String?
+  results         Json
+  profilesScraped Int       @default(0)
+  status          JobStatus @default(PENDING)
+  error           String?
+  location        String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  Profile         Profile[]
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
